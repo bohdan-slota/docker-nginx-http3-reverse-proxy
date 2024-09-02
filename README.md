@@ -18,7 +18,7 @@ For a more detailed guide on getting the demo up and running, please refer to th
 1. **Configure SSL certificate**
 * **If you own your own SSL certificate**:
 
-    1. Put SSL certificate into `/etc/nginx/ssl/fullchain.pem` and SSL Certificate Key into `/etc/nginx/ssl/privkey.pem`.
+    1. Put SSL certificate into `.docker/nginx/ssl/fullchain.pem` and SSL Certificate Key into `.docker/nginx/ssl/privkey.pem`.
 
 * **If you don't own your own SSL certificate**: Use the following guide to generate a self-signed SSL certificate for testing purposes:
 
