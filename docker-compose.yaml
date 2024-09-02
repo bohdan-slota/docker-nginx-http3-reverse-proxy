@@ -1,0 +1,31 @@
+version: '3.9'
+
+services:
+    nginx:
+        container_name: nginx-http3-reverse-proxy
+        image: nginx:stable-alpine
+        networks:
+            - nginx-http3
+        ports:
+            - "80:80/tcp"
+            - "443:443/tcp"
+            - "443:443/udp"
+        volumes:
+            - .docker/nginx/conf.d/:/etc/nginx/conf.d/
+            - .docker/nginx/ssl/:/etc/nginx/ssl/:ro
+            - .docker/nginx/html/:/usr/share/nginx/html/
+
+    demo-app:
+        container_name: nginx_http3_demo_app
+        image: nginx:stable-alpine
+        networks:
+            - nginx-http3
+        ports:
+            - 8080:80
+        volumes:
+            - .docker/demo-app/conf.d:/etc/nginx/conf.d/
+            - .docker/demo-app/html/:/usr/share/nginx/html/
+            
+networks:
+    nginx-http3:
+        external: true

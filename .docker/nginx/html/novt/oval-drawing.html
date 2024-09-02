@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drawing App</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            overflow: hidden; /* Prevent scrollbars */
+        }
+        #info {
+            position: absolute;
+            top: 1vmin;
+            left: 1vmin;
+            background: rgba(255, 255, 255, 0.8);
+            opacity: .8;
+            padding: .5vmin 1vmin;
+            width: calc(100vw - 3vmin);
+            border-radius: 3px;
+            z-index: 10; /* Ensure info div is on top */
+            font-size: 7.5pt; /* Smaller text */
+            line-height: 1.1;
+            display: none; /* Initially invisible */
+        }
+        #grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(10px, 1fr));
+            grid-template-rows: repeat(auto-fill, minmax(10px, 1fr));
+            gap: 0;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+        }
+        .cell {
+            background: green; /* Initial cell color */
+            border: 0; /* No border to ensure no gaps */
+        }
+    </style>
+</head>
+<body>
+    <!-- https://chatgpt.com/c/ba998236-5490-47e7-8921-026ca0c7083d -->
+    <div id="info"></div>
+    <div id="grid"></div>
+
+    <script>
+        //Test duration time.
+        const testDurationTime = 20000; //ms.
+
+        // Color configuration
+        const colorConfig = {
+            startColor: { r: 255, g: 255, b: 0 }, // Yellow
+            endColor: { r: 255, g: 0, b: 0 }     // Red
+        };
+
+       // Get current date, time, and timezone
+       const now = new Date();
+        const formatter = new Intl.DateTimeFormat('en-US', {
+            year: 'numeric', month: '2-digit', day: '2-digit',
+            hour: '2-digit', minute: '2-digit', second: '2-digit',
+            timeZoneName: 'short',
+            hourCycle: 'h23' // 24-hour format
+        });
+        const parts = formatter.formatToParts(now);
+
+        const [monthPart, dayPart, yearPart] = parts.filter(part => part.type === 'day' || part.type === 'month' || part.type === 'year');
+        const [hourPart, minutePart, secondPart] = parts.filter(part => part.type === 'hour' || part.type === 'minute' || part.type === 'second');
+        const timeZonePart = parts.find(part => part.type === 'timeZoneName');
+
+        const dateTime = `${yearPart.value}-${monthPart.value}-${dayPart.value} ${hourPart.value}:${minutePart.value} ${timeZonePart.value}`;
+        const userAgent = navigator.userAgent;
+
+        // Prompt for name
+        const userName = prompt("Enter your name:") || "No-Name";
+
+        // Calculate window size in millimeters
+        const pxPerInch = 96; // Typically 96 DPI
+        const inchPerMm = 0.0393701;
+        const widthMm = window.innerWidth * inchPerMm * pxPerInch;
+        const heightMm = window.innerHeight * inchPerMm * pxPerInch;
+
+        // Browser information
+        const infoDiv = document.getElementById('info');
+        infoDiv.innerHTML = `
+            <em>${userName}</em>. Date: <em>${dateTime}</em>. Window Size: <em>${window.innerWidth}x${window.innerHeight} px</em>; <em>${widthMm.toFixed(1)}x${heightMm.toFixed(1)} mm</em>. User Agent: <em>${userAgent}</em>. Test duration time: <em>${testDurationTime/1000} s</em>.
+        `;
+
+        // Create grid
+        const grid = document.getElementById('grid');
+        const cellSize = 10; // Size of each cell in pixels
+        const numRows = Math.ceil(window.innerHeight / cellSize);
+        const numCols = Math.ceil(window.innerWidth / cellSize);
+
+        grid.style.gridTemplateColumns = `repeat(${numCols}, ${cellSize}px)`;
+        grid.style.gridTemplateRows = `repeat(${numRows}, ${cellSize}px)`;
+
+        for (let i = 0; i < numRows * numCols; i++) {
+            const cell = document.createElement('div');
+            cell.className = 'cell';
+            grid.appendChild(cell);
+        }
+
+        // Color transition setup
+        const startTime = Date.now();
+        const transitionDuration = testDurationTime;
+
+        function getColor() {
+            const elapsed = Date.now() - startTime;
+            const progress = Math.min(elapsed / transitionDuration, 1); // Normalize between 0 and 1
+
+            const r = Math.round(colorConfig.startColor.r * (1 - progress) + colorConfig.endColor.r * progress);
+            const g = Math.round(colorConfig.startColor.g * (1 - progress) + colorConfig.endColor.g * progress);
+            const b = Math.round(colorConfig.startColor.b * (1 - progress) + colorConfig.endColor.b * progress);
+
+            return `rgb(${r}, ${g}, ${b})`; // Interpolated color
+        }
+
+        // Drawing function
+        function draw(e) {
+            if (drawing) {
+                const color = getColor();
+                const cells = document.elementsFromPoint(e.clientX, e.clientY);
+                cells.forEach(cell => {
+                    if (cell.classList.contains('cell')) {
+                        cell.style.background = color;
+                    }
+                });
+                //e.preventDefault();
+            }
+        }
+
+        // Handle drawing
+        let drawing = false;
+
+        // Event listener functions
+        function onMouseDown(e) {
+            drawing = true;
+            draw(e);
+        }
+
+        function onMouseUp() {
+            drawing = false;
+        }
+
+        function onMouseLeave() {
+            drawing = false;
+        }
+
+        function onMouseOver(e) {
+            if (drawing) draw(e);
+        }
+
+        function onTouchStart(e) {
+            drawing = true;
+            draw(e.touches[0]);
+        }
+
+        function onTouchEnd() {
+            drawing = false;
+        }
+
+        function onTouchMove(e) {
+            if (drawing) draw(e.touches[0]);
+        }
+
+        // Continuous color update
+        function updateColor() {
+            if (Date.now() - startTime < transitionDuration) {
+                requestAnimationFrame(updateColor); // Continue updating
+            }
+        }
+        updateColor();
+
+        // Setup drawing events
+        function setupDrawingEvents() {
+            grid.addEventListener('mousedown', onMouseDown);
+            grid.addEventListener('mouseup', onMouseUp);
+            grid.addEventListener('mouseleave', onMouseLeave);
+            grid.addEventListener('mouseover', onMouseOver);
+
+            grid.addEventListener('touchstart', onTouchStart);
+            grid.addEventListener('touchend', onTouchEnd);
+            grid.addEventListener('touchmove', onTouchMove);
+        }
+
+        // Remove drawing events
+        function removeDrawingEvents() {
+            grid.removeEventListener('mousedown', onMouseDown);
+            grid.removeEventListener('mouseup', onMouseUp);
+            grid.removeEventListener('mouseleave', onMouseLeave);
+            grid.removeEventListener('mouseover', onMouseOver);
+
+            grid.removeEventListener('touchstart', onTouchStart);
+            grid.removeEventListener('touchend', onTouchEnd);
+            grid.removeEventListener('touchmove', onTouchMove);
+        }
+
+        // Setup drawing events
+        setupDrawingEvents();
+
+        // End drawing after 30 seconds and make info visible
+        setTimeout(() => {
+            drawing = false;
+            infoDiv.style.display = 'block'; // Make info visible
+            removeDrawingEvents(); // Remove all drawing-related event listeners
+        }, transitionDuration);
+
+        // Adjust grid size on window resize
+        window.addEventListener('resize', () => {
+            const newNumRows = Math.ceil(window.innerHeight / cellSize);
+            const newNumCols = Math.ceil(window.innerWidth / cellSize);
+
+            grid.style.gridTemplateColumns = `repeat(${newNumCols}, ${cellSize}px)`;
+            grid.style.gridTemplateRows = `repeat(${newNumRows}, ${cellSize}px)`;
+        });
+    </script>
+</body>
+</html>
